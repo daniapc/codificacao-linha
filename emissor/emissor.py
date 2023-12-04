@@ -2,16 +2,30 @@ import socket
 
 loop = True
 
-sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+print("Conectando ao receptor...")
 
-host = '127.0.0.1'
-sock.connect((host, 12345))
+# Procurando endereços existentes no host
+sock = socket.socket()
+for i in range(0,255):
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    socket.setdefaulttimeout(0.05)
+    result = sock.connect_ex(("192.168.1."+str(i), 12345))
 
+    if result == 0:
+        host = "192.168.1."+str(i)
+        sock.sendall('Conexao estabelecida'.encode())
+        print(sock.recv(1024))
+        break
+    else:
+        sock.close()
+
+socket.setdefaulttimeout(600)
+
+# Loop de comunicação
 while (loop):
     mensagem = input("Digitar mensagem: ")
 
     sock.sendall(mensagem.encode())
-
     print(sock.recv(1024))
 
     loop = not(input("Continuar? S/N ").lower() == 'n')
