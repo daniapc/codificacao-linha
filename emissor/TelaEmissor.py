@@ -1,6 +1,7 @@
 import PySimpleGUI as sg
 from cryptography.fernet import Fernet
 import matplotlib.pyplot as plt
+import socket
 
 CHAVE = "v3oK2y7pLpkodK374oVZ_we6cNp4qseOwfOCcSOq1mg="
 
@@ -11,23 +12,39 @@ class TelaEmissor:
             [sg.Text('Conectando ao receptor...')],
             [sg.Text('Mensagem Escrita'), sg.Input(key='escrita')],
             [sg.Button('Enviar'), sg.Button('Gráfico Binário'), sg.Button('Gráfico HDB3')],
-            [sg.Output(size=(200,30), key='impressao')]
+            [sg.Output(size=(200,30), key='impressao')],
+            [sg.Text('Conexão fechada')]
         ]
         
         self.estado = 'Carregando'
 
         self.fernet = Fernet(CHAVE.encode())
 
-        
-
-
     def Iniciar(self):
         janela = sg.Window("Carregando").layout(self.layout[:1])
 
-        # while (self.estado == 'Carregando'):
-            
+        self.button, self.values = janela.Read(timeout=0.01)
 
-        # janela = sg.Window("Emissor").layout(self.layout[1:])
+        while (self.estado == 'Carregando'):
+            sock = socket.socket()
+            for i in range(0,255):
+                sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                socket.setdefaulttimeout(0.05)
+                result = sock.connect_ex(("192.168.1."+str(i), 12345))
+
+                if result == 0:
+                    self.estado = 'Conexao estabelecida'
+                    sock.sendall((self.estado).encode())
+                    # print(sock.recv(1024))
+                    break
+                else:
+                    sock.close()
+        
+        socket.setdefaulttimeout(600)
+
+        janela.close()
+
+        janela = sg.Window("Emissor").layout(self.layout[1:-1])
 
         self.button, self.values = janela.Read()
         # print(f'Conectando ao receptor...')
@@ -38,31 +55,34 @@ class TelaEmissor:
 
         while (not(janela.is_closed())):
             janela.FindElement('impressao').Update('')
-
-            if (self.estado == 'Carregando'):
-                print(f'Conectando ao receptor...')
-            else:
                 
-                if (self.button == 'Enviar'):
-                    escrita = self.values['escrita']
+            if (self.button == 'Enviar'):
 
-                    criptografada = self.fernet.encrypt(escrita.encode()).decode()
+                escrita = self.values['escrita']
 
-                    binaria = bin(int.from_bytes(criptografada.encode(), "big"))[2:]
+                criptografada = self.fernet.encrypt(escrita.encode()).decode()
 
-                    hdb3 = self.hdb3(binaria)
+                binaria = bin(int.from_bytes(criptografada.encode(), "big"))[2:]
 
-                if (self.button == 'Gráfico Binário'):
-                    self.fazer_grafico(binaria, "Gráfico Binário")
-                if (self.button == 'Gráfico HDB3'):
-                    self.fazer_grafico(hdb3, "Gráfico HDB3")
+                hdb3 = self.hdb3(binaria)
 
-                print(f'Mensagem Escrita:\n{escrita}\n')
-                print(f'Mensagem Criptografada:\n{criptografada}\n')
-                print(f'Mensagem Em Binário:\n{binaria}\n')
-                print(f'Mensagem Em HDB3:\n{hdb3}\n')
+                sock.sendall(hdb3.encode())
+                # print(sock.recv(1024))
+
+            if (self.button == 'Gráfico Binário'):
+                self.fazer_grafico(binaria, "Gráfico Binário")
+            if (self.button == 'Gráfico HDB3'):
+                self.fazer_grafico(hdb3, "Gráfico HDB3")
+
+            print(f'Mensagem Escrita:\n{escrita}\n')
+            print(f'Mensagem Criptografada:\n{criptografada}\n')
+            print(f'Mensagem Em Binário:\n{binaria}\n')
+            print(f'Mensagem Em HDB3:\n{hdb3}\n')
 
             self.button, self.values = janela.Read()
+
+        sock.close()
+        # janela = sg.Window("Fim").layout(self.layout[-1:])
             
 
     def hdb3(self, binario):

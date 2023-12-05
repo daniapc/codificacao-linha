@@ -9,7 +9,7 @@ host = s.getsockname()[0]
 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 sock.bind((host, 12345))
 sock.listen(5)
-print("Aguardando conexão com o endereço do receptor" + host + "...")
+print("Aguardando conexão com o endereço do receptor " + host + "...")
 con, addr = sock.accept()
 mensagem = con.recv(1024)
 con.sendall(mensagem)
