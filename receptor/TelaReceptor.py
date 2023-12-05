@@ -17,7 +17,7 @@ class TelaReceptor:
         self.layout = [
             [sg.Text("Aguardando conexão com o endereço do receptor " + self.host + "...")],
             # [sg.Text('Mensagem Escrita'), sg.Input(key='escrita')],
-            [sg.Button('Gráfico Binário'), sg.Button('Gráfico HDB3')],
+            [sg.Button('Receber'), sg.Button('Gráfico Binário'), sg.Button('Gráfico HDB3')],
             [sg.Output(size=(200,30), key='impressao')],
             [sg.Text('Conexão fechada')]
         ]
@@ -42,7 +42,7 @@ class TelaReceptor:
 
         janela = sg.Window("Receptor").layout(self.layout[1:-1])
 
-        self.button, self.values = janela.Read(timeout=0)
+        self.button, self.values = janela.Read()
         hdb3 = ''
         binaria = ''
         criptografada = ''
@@ -53,16 +53,18 @@ class TelaReceptor:
             while (not(janela.is_closed())):
                 janela.FindElement('impressao').Update('')
                     
-                # if (self.button == 'Enviar'):
+                if (self.button == 'Receber'):
 
-                hdb3 = con.recv(2048).decode()
+                    hdb3 = con.recv(2048).decode()
 
-                binaria = hdb3.replace('B00V','0000').replace('000V', '0000')
+                    binaria = hdb3.replace('B00V','0000').replace('000V', '0000')
 
-                criptografada = self.desbinarizar(binaria)
+                    criptografada = self.desbinarizar(binaria)
 
-                escrita = self.fernet.decrypt(criptografada.encode()).decode()
+                    escrita = self.fernet.decrypt(criptografada.encode()).decode()
 
+                if (self.button == 'Gráfico Binário'):
+                    self.fazer_grafico(binaria, "Gráfico Binário")
                 if (self.button == 'Gráfico HDB3'):
                     self.fazer_grafico(hdb3, "Gráfico HDB3")
 
@@ -71,7 +73,7 @@ class TelaReceptor:
                 print(f'Mensagem Criptografada:\n{criptografada}\n')
                 print(f'Mensagem Escrita:\n{escrita}\n')
 
-                self.button, self.values = janela.Read(timeout=0.1)
+                self.button, self.values = janela.Read()
             sock.close()
             
         except:

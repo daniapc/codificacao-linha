@@ -1,3 +1,5 @@
+# TESTES SEM INTERFACE GRÁFICA, IGNORAR
+
 import socket
 
 # Coleta o endereço do receptor
