@@ -1,86 +1,97 @@
 import PySimpleGUI as sg
 from cryptography.fernet import Fernet
 import matplotlib.pyplot as plt
+import socket
 
 CHAVE = "v3oK2y7pLpkodK374oVZ_we6cNp4qseOwfOCcSOq1mg="
-ESCRITA = ""
 
 class TelaReceptor:
     def __init__(self):
+        import socket
 
-        layout = [
-            [sg.Text('Mensagem Escrita'), sg.Input(key='escrita')],
-            [sg.Button('Enviar')],
-            [sg.Output(size=(100,15), key='impressao')]
+        # Coleta o endereço do receptor
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("8.8.8.8", 80))
+        self.host = s.getsockname()[0]
+
+        self.layout = [
+            [sg.Text("Aguardando conexão com o endereço do receptor " + self.host + "...")],
+            # [sg.Text('Mensagem Escrita'), sg.Input(key='escrita')],
+            [sg.Button('Gráfico Binário'), sg.Button('Gráfico HDB3')],
+            [sg.Output(size=(200,30), key='impressao')],
+            [sg.Text('Conexão fechada')]
         ]
+        
+        self.estado = 'Carregando'
 
         self.fernet = Fernet(CHAVE.encode())
 
-        self.janela = sg.Window("Receptor").layout(layout)
-
-
     def Iniciar(self):
-        self.button, self.values = self.janela.Read()
 
-        while (not(self.janela.is_closed())):
-            self.janela.FindElement('impressao').Update('')
+        janela = sg.Window(title="Carregando Receptor").layout(self.layout[:1])
+        self.button, self.values = janela.Read(timeout=0)
 
-            escrita = self.values['escrita']
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.bind((self.host, 12345))
+        sock.listen(5)
+        con, addr = sock.accept()
+        
+        socket.setdefaulttimeout(600)
 
-            criptografada = self.fernet.encrypt(escrita.encode()).decode()
+        janela.close()
 
-            binaria = bin(int.from_bytes(criptografada.encode(), "big"))[2:]
+        janela = sg.Window("Receptor").layout(self.layout[1:-1])
 
-            hdb3 = self.hdb3(binaria)
+        self.button, self.values = janela.Read(timeout=0)
+        hdb3 = ''
+        binaria = ''
+        criptografada = ''
+        escrita = ''
 
-            print(f'Mensagem Em HDB3: {hdb3}')
-            print(f'Mensagem Em Binário: {binaria}')
-            print(f'Mensagem Criptografada: {criptografada}')
-            print(f'Mensagem Escrita: {escrita}')
+        try:
+
+            while (not(janela.is_closed())):
+                janela.FindElement('impressao').Update('')
+                    
+                # if (self.button == 'Enviar'):
+
+                hdb3 = con.recv(2048).decode()
+
+                binaria = hdb3.replace('B00V','0000').replace('000V', '0000')
+
+                criptografada = self.desbinarizar(binaria)
+
+                escrita = self.fernet.decrypt(criptografada.encode()).decode()
+
+                if (self.button == 'Gráfico HDB3'):
+                    self.fazer_grafico(hdb3, "Gráfico HDB3")
+
+                print(f'Mensagem Em HDB3:\n{hdb3}\n')
+                print(f'Mensagem Em Binário:\n{binaria}\n')
+                print(f'Mensagem Criptografada:\n{criptografada}\n')
+                print(f'Mensagem Escrita:\n{escrita}\n')
+
+                self.button, self.values = janela.Read(timeout=0.1)
+            sock.close()
             
-            self.fazer_grafico(hdb3, "Gráfico HDB3")
-            self.fazer_grafico(binaria, "Gráfico Binário")
-
-            self.button, self.values = self.janela.Read()
+        except:
+            sock.close()
+        # janela = sg.Window("Fim").layout(self.layout[-1:])
             
 
-    def hdb3(self, binario):
-        substituido = list(binario)
-        
-        index = 0
-        
-        pulsos_high = 0
+    def desbinarizar(self, binaria):
+        criptografada = ''
+        i = 0
+        while i < len(binaria):
+            criptografada += chr(int(binaria[i:i+8],2))
+            i += 8
 
-        size = len(binario)-3
-
-        while index < size:
-
-            if binario[index] == '1':
-                pulsos_high += 1
-
-            sequencia = binario[index:index+4]
-
-            if sequencia == '0000':
-                if pulsos_high%2 == 0:
-                    substituido[index]   = 'B'
-                    substituido[index+1] = '0'
-                    substituido[index+2] = '0'
-                    substituido[index+3] = 'V'
-                else:
-                    substituido[index]   = '0'
-                    substituido[index+1] = '0'
-                    substituido[index+2] = '0'
-                    substituido[index+3] = 'V'
-
-                pulsos_high = 0
-                index += 3
-            
-            index += 1
-        
-        
-        return ''.join(substituido)
+        return criptografada
 
     def fazer_grafico(self, binario, titulo):
+        if binario == '':
+            return
+
         tam = len(binario)
 
         binario = binario.replace('B', '1').replace('V', '1')
@@ -102,12 +113,13 @@ class TelaReceptor:
             plt.plot((tam-1, tam-1), (0, int(binario[tam-1])), color = 'b')
         plt.plot((tam-1, tam-1), (int(binario[tam-1]), int(binario[tam-1])), color = 'b')
 
-
         ax = plt.gca() 
         ax.set_ylim([0, 2])
         plt.xlabel("X")
         plt.ylabel("y")
-        plt.title(titulo) 
+        plt.title(titulo)
+
+        plt.draw()
         plt.show()
 
 

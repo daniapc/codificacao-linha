@@ -9,7 +9,7 @@ class TelaEmissor:
     def __init__(self):
 
         self.layout = [
-            [sg.Text('Conectando ao receptor...')],
+            [sg.Text('Realizando conexão com o receptor...')],
             [sg.Text('Mensagem Escrita'), sg.Input(key='escrita')],
             [sg.Button('Enviar'), sg.Button('Gráfico Binário'), sg.Button('Gráfico HDB3')],
             [sg.Output(size=(200,30), key='impressao')],
@@ -21,9 +21,9 @@ class TelaEmissor:
         self.fernet = Fernet(CHAVE.encode())
 
     def Iniciar(self):
-        janela = sg.Window("Carregando").layout(self.layout[:1])
+        janela = sg.Window("Carregando Emissor").layout(self.layout[:1])
 
-        self.button, self.values = janela.Read(timeout=0.01)
+        self.button, self.values = janela.Read(timeout=0)
 
         while (self.estado == 'Carregando'):
             sock = socket.socket()
@@ -34,7 +34,7 @@ class TelaEmissor:
 
                 if result == 0:
                     self.estado = 'Conexao estabelecida'
-                    sock.sendall((self.estado).encode())
+                    # sock.sendall((self.estado).encode())
                     # print(sock.recv(1024))
                     break
                 else:
@@ -62,7 +62,10 @@ class TelaEmissor:
 
                 criptografada = self.fernet.encrypt(escrita.encode()).decode()
 
-                binaria = bin(int.from_bytes(criptografada.encode(), "big"))[2:]
+                codigoascii = criptografada.encode('utf-8')
+
+                binaria = ''.join([str(int(str(bin(bit))[2:])+100000000)[1:] for bit in codigoascii])
+                # binaria = bin(int.from_bytes(criptografada.encode(), "big"))[2:]
 
                 hdb3 = self.hdb3(binaria)
 
