@@ -3,6 +3,7 @@ from cryptography.fernet import Fernet
 import matplotlib.pyplot as plt
 
 CHAVE = "v3oK2y7pLpkodK374oVZ_we6cNp4qseOwfOCcSOq1mg="
+ESCRITA = ""
 
 class TelaReceptor:
     def __init__(self):

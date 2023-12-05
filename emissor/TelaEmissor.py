@@ -7,40 +7,62 @@ CHAVE = "v3oK2y7pLpkodK374oVZ_we6cNp4qseOwfOCcSOq1mg="
 class TelaEmissor:
     def __init__(self):
 
-        layout = [
+        self.layout = [
+            [sg.Text('Conectando ao receptor...')],
             [sg.Text('Mensagem Escrita'), sg.Input(key='escrita')],
-            [sg.Button('Enviar')],
-            [sg.Output(size=(100,15), key='impressao')]
+            [sg.Button('Enviar'), sg.Button('Gráfico Binário'), sg.Button('Gráfico HDB3')],
+            [sg.Output(size=(200,30), key='impressao')]
         ]
+        
+        self.estado = 'Carregando'
 
         self.fernet = Fernet(CHAVE.encode())
 
-        self.janela = sg.Window("Emissor").layout(layout)
+        
 
 
     def Iniciar(self):
-        self.button, self.values = self.janela.Read()
+        janela = sg.Window("Carregando").layout(self.layout[:1])
 
-        while (not(self.janela.is_closed())):
-            self.janela.FindElement('impressao').Update('')
-
-            escrita = self.values['escrita']
-
-            criptografada = self.fernet.encrypt(escrita.encode()).decode()
-
-            binaria = bin(int.from_bytes(criptografada.encode(), "big"))[2:]
-
-            hdb3 = self.hdb3(binaria)
-
-            print(f'Mensagem Escrita: {escrita}')
-            print(f'Mensagem Criptografada: {criptografada}')
-            print(f'Mensagem Em Binário: {binaria}')
-            print(f'Mensagem Em HDB3: {hdb3}')
+        while (self.estado == 'Carregando'):
             
-            self.fazer_grafico(binaria, "Gráfico Binário")
-            self.fazer_grafico(hdb3, "Gráfico HDB3")
 
-            self.button, self.values = self.janela.Read()
+        janela = sg.Window("Emissor").layout(self.layout[1:])
+
+        self.button, self.values = janela.Read()
+        # print(f'Conectando ao receptor...')
+        escrita = ''
+        criptografada = ''
+        binaria = ''
+        hdb3 = ''
+
+        while (not(janela.is_closed())):
+            janela.FindElement('impressao').Update('')
+
+            if (self.estado == 'Carregando'):
+                print(f'Conectando ao receptor...')
+            else:
+                
+                if (self.button == 'Enviar'):
+                    escrita = self.values['escrita']
+
+                    criptografada = self.fernet.encrypt(escrita.encode()).decode()
+
+                    binaria = bin(int.from_bytes(criptografada.encode(), "big"))[2:]
+
+                    hdb3 = self.hdb3(binaria)
+
+                if (self.button == 'Gráfico Binário'):
+                    self.fazer_grafico(binaria, "Gráfico Binário")
+                if (self.button == 'Gráfico HDB3'):
+                    self.fazer_grafico(hdb3, "Gráfico HDB3")
+
+                print(f'Mensagem Escrita:\n{escrita}\n')
+                print(f'Mensagem Criptografada:\n{criptografada}\n')
+                print(f'Mensagem Em Binário:\n{binaria}\n')
+                print(f'Mensagem Em HDB3:\n{hdb3}\n')
+
+            self.button, self.values = janela.Read()
             
 
     def hdb3(self, binario):
@@ -80,6 +102,9 @@ class TelaEmissor:
         return ''.join(substituido)
 
     def fazer_grafico(self, binario, titulo):
+        if binario == '':
+            return
+
         tam = len(binario)
 
         binario = binario.replace('B', '1').replace('V', '1')
@@ -101,12 +126,13 @@ class TelaEmissor:
             plt.plot((tam-1, tam-1), (0, int(binario[tam-1])), color = 'b')
         plt.plot((tam-1, tam-1), (int(binario[tam-1]), int(binario[tam-1])), color = 'b')
 
-
         ax = plt.gca() 
         ax.set_ylim([0, 2])
         plt.xlabel("X")
         plt.ylabel("y")
-        plt.title(titulo) 
+        plt.title(titulo)
+
+        plt.draw()
         plt.show()
 
 
