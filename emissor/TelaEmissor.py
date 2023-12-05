@@ -24,10 +24,10 @@ class TelaEmissor:
     def Iniciar(self):
         janela = sg.Window("Carregando").layout(self.layout[:1])
 
-        while (self.estado == 'Carregando'):
+        # while (self.estado == 'Carregando'):
             
 
-        janela = sg.Window("Emissor").layout(self.layout[1:])
+        # janela = sg.Window("Emissor").layout(self.layout[1:])
 
         self.button, self.values = janela.Read()
         # print(f'Conectando ao receptor...')
