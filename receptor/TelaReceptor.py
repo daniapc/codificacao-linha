@@ -7,7 +7,6 @@ CHAVE = "v3oK2y7pLpkodK374oVZ_we6cNp4qseOwfOCcSOq1mg="
 
 class TelaReceptor:
     def __init__(self):
-        import socket
 
         # Coleta o endereço do receptor
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)

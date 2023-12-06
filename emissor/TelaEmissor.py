@@ -8,6 +8,12 @@ CHAVE = "v3oK2y7pLpkodK374oVZ_we6cNp4qseOwfOCcSOq1mg="
 class TelaEmissor:
     def __init__(self):
 
+        # Coleta o endereço do receptor
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("8.8.8.8", 80))
+        host = s.getsockname()[0]
+        self.host = host[:host.rindex('.')+1]
+        
         self.layout = [
             [sg.Text('Realizando conexão com o receptor...')],
             [sg.Text('Mensagem Escrita'), sg.Input(key='escrita')],
@@ -30,7 +36,7 @@ class TelaEmissor:
             for i in range(0,255):
                 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 socket.setdefaulttimeout(0.05)
-                result = sock.connect_ex(("192.168.1."+str(i), 12345))
+                result = sock.connect_ex((self.host+str(i), 12345))
 
                 if result == 0:
                     self.estado = 'Conexao estabelecida'
